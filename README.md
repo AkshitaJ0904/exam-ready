@@ -41,7 +41,7 @@ Locally, data is saved to `data/store.json` (git-ignored).
 
 I looked at how real exams and readiness tools work first:
 
-- **The exam itself.** Goethe-Zertifikat A1 *Start Deutsch 1* is passed with at least **60% of the total points** (all parts taken). Sources describe it as not modular; the per-module 60% rule applies to B1 and above. I could not confirm the ÖSD A1 rule from an official source, so the app uses the Goethe rule and says so.
+- **The exam itself (confirmed from Goethe's own regulations).** The *Durchführungsbestimmungen* for Goethe-Zertifikat A1: Start Deutsch 1 (version of 1 September 2023, section 6.3) say the exam is passed with **at least 60 of 100 points, provided all four parts were taken**. The 100 points are 75 for the written parts (listening, reading, writing) and 25 for speaking, so each of the four parts is worth about 25. There is **no minimum per part**, and the exam can only be repeated as a whole (section 7). Check goethe.de for newer versions. I could not confirm the ÖSD A1 rule from an official source, so the app uses the Goethe rule and says so.
 - **Readiness predictors** such as UWorld's NCLEX "chance of passing" report a *probability*, not a raw percentage. UWorld says it uses a statistical model (Item Response Theory). That is the idea I borrowed.
 - **CEFR "can-do" statements** describe A1 ability as "I can…". They are the model for the markers.
 
@@ -49,7 +49,7 @@ So the score works like this:
 
 1. **Evidence.** Each question counts by difficulty (easy 1, medium 2, hard 3). "I don't know" counts as wrong, but it stops people guessing.
 2. **Skill estimate with uncertainty.** A Beta distribution turns each skill's answers into an estimate and an 80% range. Five questions per skill is a small sample, so the range is wide, and the app shows it.
-3. **Overall ability.** Reading 40%, grammar 30%, vocabulary 30%, combined with their uncertainty.
+3. **Overall ability.** Reading 40%, grammar 30%, vocabulary 30%, combined with their uncertainty. These weights are my design choice: the real exam weights its four parts equally, but reading is the only one this check measures directly, while grammar and vocabulary are proxies for the rest.
 4. **Chance of passing.** The probability that the learner's true level is at or above the 60% pass line.
 5. **Decision.** 85% or more is *Ready*, 60–84% is *Almost ready*, below 60% is *Not ready yet*. The bar for "Ready" is high on purpose: a wrong "ready" costs an exam fee and months; a wrong "not yet" costs a couple of weeks. In practice about 13 of 15 correct is needed.
 6. **Safety rule (my design choice, not an exam rule).** A skill under 40% blocks "Ready", because listening, writing and speaking lean on the same words and grammar and this check can't see them.
