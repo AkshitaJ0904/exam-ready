@@ -3,3 +3,4 @@ node_modules/
 .vercel/
 .env*
 VIDEO_SCRIPT.md
+.vercel
