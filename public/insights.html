@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Is the score right? · Exam Ready insights</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="Exam Ready home">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M9 16.5l4.5 4.5L23 11" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Exam Ready</span>
+      </a>
+      <a class="header-tag" href="/">← Back to the check</a>
+    </div>
+  </header>
+
+  <main class="container" id="app" aria-live="polite">
+    <h1>Is the score right?</h1>
+    <p class="lede muted">Every anonymous attempt and every reported exam result feeds this page. It is how we find out whether “85% chance” really means 85%, and which questions need fixing for version 2.</p>
+    <div id="out"><p class="muted">Loading…</p></div>
+  </main>
+
+  <script>
+  (function () {
+    const out = document.getElementById("out");
+    function h(tag, attrs, ...kids) {
+      const el = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs || {})) { if (k === "class") el.className = v; else if (v != null && v !== false) el.setAttribute(k, v); }
+      for (const kid of kids.flat()) { if (kid == null || kid === false) continue; el.append(kid.nodeType ? kid : document.createTextNode(kid)); }
+      return el;
+    }
+    const pct = (v) => (v == null ? "–" : v + "%");
+    const stat = (n, label) => h("div", { class: "stat" }, h("b", {}, String(n)), h("span", {}, label));
+
+    fetch("/api/insights").then((r) => r.json().then((j) => { if (!r.ok) throw new Error(j.error); return j; })).then((d) => {
+      const reported = d.outcomes.passed + d.outcomes.failed;
+      const feelTotal = d.feel["too-high"] + d.feel["about-right"] + d.feel["too-low"];
+      const nodes = [];
+
+      if (d.storage && !d.storage.persistent) {
+        nodes.push(h("div", { class: "note" }, "Storage is temporary on this server (" + d.storage.kind + "), so these numbers can reset. Connect a Redis database (see README) to keep them."));
+      }
+      nodes.push(h("div", { class: "stat-grid" },
+        stat(d.attempts, "checks taken"),
+        stat(pct(d.meanChance), "average chance of passing"),
+        stat(reported, "real exam results reported"),
+        stat(feelTotal ? Math.round((d.feel["about-right"] / feelTotal) * 100) + "%" : "–", "said “about right”")));
+
+      nodes.push(h("div", { class: "card" },
+        h("h2", {}, "Calibration: does our chance match reality?"),
+        h("p", { class: "muted small" }, "Learners are grouped by the chance of passing we gave them. If the score is right, the dark marker (what really happened) sits next to the shaded bar (what we predicted). Needs real exam results to fill in."),
+        h("div", { class: "tablewrap" }, h("table", { class: "data" },
+          h("thead", {}, h("tr", {}, ["We said", "Checks", "Reported", "Predicted", "Actually passed", ""].map((t) => h("th", {}, t)))),
+          h("tbody", {}, d.calibration.map((b) => h("tr", {},
+            h("td", {}, b.label), h("td", {}, String(b.attempts)), h("td", {}, String(b.reported)),
+            h("td", {}, pct(b.predicted)), h("td", {}, pct(b.actual)),
+            h("td", {}, h("div", { class: "cal-bar", "aria-hidden": "true" },
+              b.predicted != null && h("i", { style: "width:" + b.predicted + "%" }),
+              b.actual != null && h("b", { style: "left:" + b.actual + "%" }))))))))));
+
+      nodes.push(h("div", { class: "card" },
+        h("h2", {}, "Average score by skill"),
+        h("div", { class: "stat-grid" }, Object.entries(d.meanSkills).map(([k, v]) => stat(pct(v), k)))));
+
+      nodes.push(h("div", { class: "card" },
+        h("h2", {}, "Question health"),
+        h("p", { class: "muted small" }, "Questions that nearly everyone gets right or wrong, or that many people skip with “I don't know”, tell us little. Flags appear after 20 attempts."),
+        h("div", { class: "tablewrap" }, h("table", { class: "data" },
+          h("thead", {}, h("tr", {}, ["Question", "Skill", "Level", "Correct", "Don't know", "Note"].map((t) => h("th", {}, t)))),
+          h("tbody", {}, d.questions.map((q) => h("tr", {},
+            h("td", {}, q.prompt.length > 60 ? q.prompt.slice(0, 58) + "…" : q.prompt),
+            h("td", {}, q.skill), h("td", {}, ["", "easy", "medium", "hard"][q.difficulty]),
+            h("td", {}, pct(q.pctCorrect)), h("td", {}, pct(q.pctUnsure)),
+            h("td", { class: "flag" }, q.flag || ""))))))));
+
+      out.replaceChildren(...nodes);
+    }).catch((e) => out.replaceChildren(h("div", { class: "error", role: "alert" }, e.message || "Could not load insights.")));
+  })();
+  </script>
+</body>
+</html>

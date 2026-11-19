@@ -1,0 +1,11 @@
+{
+  "name": "exam-ready",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Am I exam-ready? A German A1 readiness check with a feedback loop to validate the score.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/scoring.test.js && node test/api.test.js"
+  },
+  "engines": { "node": ">=18" }
+}
